@@ -1,0 +1,1 @@
+export const baseUrl="https://goal-tracker-api.onrender.com/api/v1/"
