@@ -1,106 +1,121 @@
-"use client"
+"use client";
 
-import React,{ useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { baseUrl } from "@/utils/constants";
-import "../globals.css"
-// import { baseUrl } from "./utils/constants";
+import "../globals.css";
+
 function Login() {
-    const [authData, setAuthData] = useState({
+  const [authData, setAuthData] = useState({
     email: "",
     password: "",
     name: "",
   });
-  const [mode, setMode] = useState("login");
-  const [isDissabled, setIsDissable] = useState(false);
 
-  const handleSubmit = async () => {
+  const [mode, setMode] = useState("login"); 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setAuthData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); 
+
+    const { email, password, name } = authData;
+    if (!email || !password || (mode === "register" && !name)) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
     try {
-      let obj = { ...authData };
-      if (mode == "login") {
-        delete obj.name;
-      }
-      setIsDissable(true);
-      let res = await axios.post(
-        baseUrl + (mode == "login" ? "auth/login" : "auth/register"),
-        obj
-      );
-      if (res?.status === 201) {
+      setIsSubmitting(true);
+
+      const payload = { email, password, ...(mode === "register" && { name }) };
+      const url = `${baseUrl}auth/${mode}`;
+
+      const res = await axios.post(url, payload);
+
+      if (res.status === 201) {
         alert("User Registered Successfully");
-      } else if (res?.status === 200) {
-        alert(res?.data?.msg);
-        localStorage.setItem("authToken", res?.data?.token);
+      } else if (res.status === 200) {
+        alert(res.data?.msg || "Login successful");
+        localStorage.setItem("authToken", res.data?.token);
       }
-    } catch (error) {
-      console.log(error?.response?.data?.msg);
-      alert(error?.response?.data?.msg);
+    } catch (err) {
+      const errorMsg = err?.response?.data?.msg || "Something went wrong";
+      alert(errorMsg);
     } finally {
-      setAuthData({
-        email: "",
-        password: "",
-        name: "",
-      });
-      setIsDissable(false);
+      setAuthData({ email: "", password: "", name: "" });
+      setIsSubmitting(false);
     }
   };
 
+  const toggleMode = () => {
+    setMode((prev) => (prev === "login" ? "register" : "login"));
+  };
+
   return (
-   <div className="App">
+    <div className="app">
       <div className="auth-wrapper">
-        <h2>{mode === "login" ? "Login Page" : "Register Page"}</h2>
-        {mode === "register" && (
+        <h2>{mode === "login" ? "Login" : "Register"}</h2>
+
+        <form onSubmit={handleSubmit} className="form">
+          {mode === "register" && (
+            <input
+              type="text"
+              name="name"
+              placeholder="Enter Name"
+              value={authData.name}
+              onChange={handleChange}
+            />
+          )}
+
           <input
-            type="text"
-            name="name"
-
-            value={authData.name}
-            placeholder="Enter Name"
-            onChange={(e) =>
-              setAuthData((prev) => ({ ...prev, name: e.target.value }))
-            }
-          />
-        )}
-        <input
-          type="email"
-          name="email"
-          placeholder="Enter Email"
+            type="email"
+            name="email"
+            placeholder="Enter Email"
             value={authData.email}
+            onChange={handleChange}
+          />
 
-          onChange={(e) =>
-            setAuthData((prev) => ({ ...prev, email: e.target.value }))
-          }
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Enter Password"
-          value={authData.password}
-          onChange={(e) =>
-            setAuthData((prev) => ({ ...prev, password: e.target.value }))
-          }
-        />
+          <input
+            type="password"
+            name="password"
+            placeholder="Enter Password"
+            value={authData.password}
+            onChange={handleChange}
+          />
 
-        <button className="btn" onClick={handleSubmit} disabled={isDissabled}>
-          {mode === "login" ? "Login" : "Register"}{" "}
-        </button>
-        <div className="span-wrapper">
+          <button
+            type="submit"
+            className="btn"
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? mode === "login"
+                ? "Logging in..."
+                : "Registering..."
+              : mode === "login"
+              ? "Login"
+              : "Register"}
+          </button>
+        </form>
+
+        <div className="switch-mode">
           <span>
             {mode === "login"
-              ? "Don't have account"
-              : "Already have an account "}{" "}
+              ? "Don't have an account?"
+              : "Already have an account?"}{" "}
           </span>
-          <span
-            className="span-btn"
-            onClick={() =>
-              mode === "login" ? setMode("register") : setMode("login")
-            }
-          >
-            {mode === "login" ? "register" : "login"}
-          </span>
+          <button type="button" className="link-button" onClick={toggleMode}>
+            {mode === "login" ? "Register" : "Login"}
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;
